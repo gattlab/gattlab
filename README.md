@@ -12,6 +12,8 @@ device chooser, scripts its answers and asserts on what your application did.
 The application keeps calling the real `navigator.bluetooth` API; nothing in
 the page is patched or mocked.
 
+![The README example running: GattLab creates a virtual Battery Sensor, the app selects it in the device chooser and shows 87%, and the test passes in headless Chromium.](docs/assets/gattlab-demo.gif)
+
 > **Alpha:** the API can change before 1.0. Chromium only. Read the
 > [limitations](#limitations) before adopting it.
 
