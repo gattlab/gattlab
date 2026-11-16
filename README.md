@@ -2,7 +2,7 @@
 
 [![Build & tests](https://github.com/gattlab/gattlab/actions/workflows/validate.yml/badge.svg)](https://github.com/gattlab/gattlab/actions/workflows/validate.yml)
 [![Dependency audit](https://github.com/gattlab/gattlab/actions/workflows/security-audit.yml/badge.svg)](https://github.com/gattlab/gattlab/actions/workflows/security-audit.yml)
-[![npm](https://img.shields.io/npm/v/@gattlab/playwright/alpha?label=npm%20%40alpha)](https://www.npmjs.com/package/@gattlab/playwright)
+[![npm](https://img.shields.io/npm/v/@gattlab/playwright/beta?label=npm%20%40beta)](https://www.npmjs.com/package/@gattlab/playwright)
 
 **Test Web Bluetooth apps with Playwright, without Bluetooth hardware.**
 
@@ -14,7 +14,7 @@ the page is patched or mocked.
 
 ![The README example running: GattLab creates a virtual Battery Sensor, the app selects it in the device chooser and shows 87%, and the test passes in headless Chromium.](docs/assets/gattlab-demo.gif)
 
-> **Alpha:** the API can change before 1.0. Chromium only. Read the
+> **Beta:** the API can still change before 1.0. Chromium only. Read the
 > [limitations](#limitations) before adopting it.
 
 ## Example
@@ -55,7 +55,7 @@ a minimal application.
 ## Install
 
 ```sh
-npm install --save-dev @gattlab/playwright@alpha @playwright/test
+npm install --save-dev @gattlab/playwright@beta @playwright/test
 npx playwright install chromium
 ```
 

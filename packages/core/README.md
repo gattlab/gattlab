@@ -6,7 +6,7 @@ automation-backend boundary, and bounded diagnostic timelines. It does not
 depend on Playwright, CDP, browser globals, Node filesystem APIs, or wall-clock
 time.
 
-The package is published on npm as a prerelease under the `alpha` tag. Most
+The package is published on npm as a prerelease under the `beta` tag. Most
 tests need only `@gattlab/playwright`, which depends on it and re-exports
 `bytes`. Import only from `@gattlab/core`; internal module paths are not public
 API.

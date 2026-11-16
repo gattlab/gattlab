@@ -17,7 +17,7 @@ to reproduce the issue; redact tokens and unrelated diagnostic data.
 ## Supported versions
 
 Security maintenance targets the latest version published on npm under the
-`alpha` tag and the current main branch; update older versions before checking
+`beta` tag and the current main branch; update older versions before checking
 whether an issue is still present. Prereleases can change without a stable API
 guarantee. A report
 does not imply a fixed response deadline or a guaranteed fix schedule.

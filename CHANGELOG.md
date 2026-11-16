@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.1.0-alpha.2 — Unreleased
+## 0.1.0-beta — Unreleased
 
+- First beta, published on npm under the `beta` tag.
 - The `@gattlab/playwright` peer range is now `@playwright/test >=1.65.0 <2.0.0`,
   so projects can upgrade Playwright within 1.x without a peer-dependency
   conflict. Validation is unchanged: only Playwright 1.65.1 with bundled

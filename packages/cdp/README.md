@@ -1,7 +1,7 @@
 # `@gattlab/cdp`
 
 Typed Chromium CDP implementation details for GattLab, published on npm as a
-prerelease under the `alpha` tag. Application tests normally consume the
+prerelease under the `beta` tag. Application tests normally consume the
 `@gattlab/playwright` facade rather than instantiate these components.
 
 See the [consumer quick start](../../docs/quick-start.md),

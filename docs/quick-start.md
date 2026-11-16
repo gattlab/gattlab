@@ -15,7 +15,7 @@ mkdir gattlab-first-test
 cd gattlab-first-test
 npm init -y
 npm pkg set type=module
-npm install --save-dev @gattlab/playwright@alpha @playwright/test
+npm install --save-dev @gattlab/playwright@beta @playwright/test
 npx playwright install chromium
 ```
 

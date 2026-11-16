@@ -1,6 +1,6 @@
 {
   "name": "@gattlab/cdp",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-beta",
   "description": "Chromium CDP backend for GattLab.",
   "type": "module",
   "sideEffects": false,

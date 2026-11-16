@@ -1,6 +1,6 @@
 {
   "name": "@gattlab/core",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-beta",
   "description": "Protocol-independent domain model for GattLab.",
   "type": "module",
   "sideEffects": false,

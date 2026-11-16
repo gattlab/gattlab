@@ -1,6 +1,6 @@
 {
   "name": "gattlab",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-beta",
   "private": true,
   "description": "Playwright-first Web Bluetooth testing toolkit.",
   "type": "module",

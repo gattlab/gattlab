@@ -38,7 +38,7 @@ error name. Empty result and error fields display `--`.
 
 ## First test through the public fixture
 
-Install `@gattlab/playwright@alpha` and `@playwright/test` as described in the
+Install `@gattlab/playwright@beta` and `@playwright/test` as described in the
 [quick start](../../docs/quick-start.md), then run the built sample's server
 and set `REACT_SAMPLE_URL` to its announced URL.
 The following test needs only the public package and Playwright declarations:

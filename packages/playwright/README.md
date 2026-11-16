@@ -5,7 +5,7 @@ Playwright Test integration for GattLab. The package exports its custom
 fixture-owned `BluetoothLab` facade from one import location.
 
 ```sh
-npm install --save-dev @gattlab/playwright@alpha @playwright/test
+npm install --save-dev @gattlab/playwright@beta @playwright/test
 ```
 
 The [quick start](../../docs/quick-start.md) builds a minimal application and
