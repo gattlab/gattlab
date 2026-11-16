@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vanilla TypeScript Web Bluetooth sample</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main>
+      <h1>GattLab sensor console</h1>
+      <p>
+        This page uses the browser Web Bluetooth API directly. Test automation
+        remains outside the application.
+      </p>
+
+      <section aria-labelledby="device-controls">
+        <h2 id="device-controls">Device</h2>
+        <button id="connect" type="button">Connect, read, and write</button>
+        <button id="cancel" type="button">Open chooser for cancellation</button>
+        <button id="availability" type="button">
+          Check adapter availability
+        </button>
+      </section>
+
+      <section aria-labelledby="notification-controls">
+        <h2 id="notification-controls">Notifications</h2>
+        <button id="subscribe" type="button">Subscribe to notifications</button>
+        <button id="unsubscribe" type="button">
+          Unsubscribe from notifications
+        </button>
+      </section>
+
+      <section aria-labelledby="attribute-controls">
+        <h2 id="attribute-controls">Attributes on one connection</h2>
+        <button id="read-both" type="button" data-testid="read-both">
+          Read both characteristics
+        </button>
+        <button
+          id="read-descriptor"
+          type="button"
+          data-testid="read-descriptor"
+        >
+          Read descriptor
+        </button>
+        <button
+          id="write-descriptor"
+          type="button"
+          data-testid="write-descriptor"
+        >
+          Write descriptor
+        </button>
+        <button
+          id="write-without-response"
+          type="button"
+          data-testid="write-without-response"
+        >
+          Write without response
+        </button>
+        <button id="write-burst" type="button" data-testid="write-burst">
+          Send ordered burst
+        </button>
+      </section>
+
+      <dl aria-live="polite">
+        <dt>Status</dt>
+        <dd data-testid="status">idle</dd>
+        <dt>Battery</dt>
+        <dd data-testid="battery">--</dd>
+        <dt>Written bytes</dt>
+        <dd data-testid="written">--</dd>
+        <dt>Battery (two-characteristic read)</dt>
+        <dd data-testid="regression-battery">--</dd>
+        <dt>Firmware revision</dt>
+        <dd data-testid="firmware">--</dd>
+        <dt>Descriptor read bytes</dt>
+        <dd data-testid="descriptor-read">--</dd>
+        <dt>Descriptor written bytes</dt>
+        <dd data-testid="descriptor-written">--</dd>
+        <dt>Written without response</dt>
+        <dd data-testid="without-response-written">--</dd>
+        <dt>Burst completed writes</dt>
+        <dd data-testid="burst-completed">0</dd>
+        <dt>Error name</dt>
+        <dd data-testid="error-name">--</dd>
+        <dt>Error message</dt>
+        <dd data-testid="error-message">--</dd>
+      </dl>
+    </main>
+    <script type="module" src="/dist/app.js"></script>
+  </body>
+</html>

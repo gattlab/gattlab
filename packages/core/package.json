@@ -1,0 +1,37 @@
+{
+  "name": "@gattlab/core",
+  "version": "0.1.0-alpha.2",
+  "description": "Protocol-independent domain model for GattLab.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gattlab/gattlab.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/gattlab/gattlab/tree/main/packages/core#readme",
+  "bugs": {
+    "url": "https://github.com/gattlab/gattlab/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

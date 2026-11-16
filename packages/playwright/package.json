@@ -1,0 +1,44 @@
+{
+  "name": "@gattlab/playwright",
+  "version": "0.1.0-alpha.2",
+  "description": "Playwright integration for GattLab.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@gattlab/cdp": "workspace:*",
+    "@gattlab/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.65.0 <2.0.0"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gattlab/gattlab.git",
+    "directory": "packages/playwright"
+  },
+  "homepage": "https://github.com/gattlab/gattlab/tree/main/packages/playwright#readme",
+  "bugs": {
+    "url": "https://github.com/gattlab/gattlab/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

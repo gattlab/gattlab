@@ -1,0 +1,30 @@
+@implements IDisposable
+@inject LifecycleLog Log
+
+<main>
+    <h1>GattLab Blazor WebAssembly sample</h1>
+    <p>Real Web Bluetooth, a C# service, and Razor-owned UI.</p>
+    <button id="hide-panel" disabled="@(!showPanel)" @onclick="() => showPanel = false">Hide Bluetooth panel</button>
+    <button id="show-panel" disabled="@showPanel" @onclick="() => showPanel = true">Show Bluetooth panel</button>
+    @if (showPanel)
+    {
+        <BluetoothPanel />
+    }
+    <h2>Lifecycle log</h2>
+    <ol data-testid="lifecycle-log">
+        @foreach (var entry in Log.Entries)
+        {
+            <li>@entry</li>
+        }
+    </ol>
+</main>
+
+@code {
+    private bool showPanel = true;
+
+    protected override void OnInitialized() => Log.Changed += OnLogChanged;
+
+    private void OnLogChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Log.Changed -= OnLogChanged;
+}

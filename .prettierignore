@@ -1,0 +1,10 @@
+**/dist/
+**/node_modules/
+**/test-results/
+pnpm-lock.yaml
+tools/protocol-probe/
+examples/blazor-wasm/bin/
+examples/blazor-wasm/obj/
+examples/blazor-wasm/**/*.cs
+examples/blazor-wasm/**/*.razor
+examples/blazor-wasm/*.csproj

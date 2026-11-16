@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "isolatedDeclarations": false,
+    "lib": ["ES2023"],
+    "noEmit": true,
+    "sourceMap": false,
+    "types": []
+  },
+  "include": ["browser-global.ts"]
+}

@@ -1,0 +1,22 @@
+body {
+  font:
+    16px system-ui,
+    sans-serif;
+  margin: 3rem auto;
+  max-width: 48rem;
+  padding: 0 1rem;
+}
+button {
+  font: inherit;
+  margin: 0.5rem 0.5rem 0.5rem 0;
+  padding: 0.5rem;
+}
+dl {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: 0.5rem;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

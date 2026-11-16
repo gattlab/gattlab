@@ -1,0 +1,51 @@
+:root {
+  font:
+    16px/1.5 system-ui,
+    sans-serif;
+  color: #162735;
+  background: #f3f6f8;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 44rem;
+  margin: 3rem auto;
+  padding: 2rem;
+  background: white;
+  border: 1px solid #d6e0e6;
+  border-radius: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+button {
+  padding: 0.65rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: 0.5rem 1rem;
+}
+
+dt {
+  font-weight: 600;
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

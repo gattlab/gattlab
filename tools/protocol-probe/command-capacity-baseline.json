@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "kind": "diagnosticReference",
+  "local": {
+    "maximumMs": 3.6361969999999815
+  },
+  "ci": {
+    "maximumMs": 21.113976999999977
+  },
+  "inventory": {
+    "schemaVersion": 1,
+    "profiles": [
+      {
+        "id": "vanilla:tools/vanilla-app-fixtures/tests/probe-support.ts:peripheralDefinition:0",
+        "family": "vanilla",
+        "file": "tools/vanilla-app-fixtures/tests/probe-support.ts",
+        "owner": "peripheralDefinition",
+        "occurrence": 0,
+        "counts": {
+          "services": 1,
+          "characteristics": 3,
+          "descriptors": 2
+        },
+        "services": [
+          {
+            "characteristics": [
+              {
+                "descriptors": 1,
+                "properties": [
+                  "read",
+                  "write",
+                  "write-without-response"
+                ]
+              },
+              {
+                "descriptors": 0,
+                "properties": [
+                  "read"
+                ]
+              },
+              {
+                "descriptors": 1,
+                "properties": [
+                  "notify"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "blazor:tools/blazor-app-fixtures/tests/probe-support.ts:createProbePeripheral:0",
+        "family": "blazor",
+        "file": "tools/blazor-app-fixtures/tests/probe-support.ts",
+        "owner": "createProbePeripheral",
+        "occurrence": 0,
+        "counts": {
+          "services": 1,
+          "characteristics": 3,
+          "descriptors": 2
+        },
+        "services": [
+          {
+            "characteristics": [
+              {
+                "descriptors": 1,
+                "properties": [
+                  "read",
+                  "write",
+                  "write-without-response"
+                ]
+              },
+              {
+                "descriptors": 0,
+                "properties": [
+                  "read"
+                ]
+              },
+              {
+                "descriptors": 1,
+                "properties": [
+                  "notify"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "playwright:packages/playwright/e2e/public-facade.spec.ts:selects duplicate names by address and rejects stale candidates before mutation:1",
+        "family": "playwright",
+        "file": "packages/playwright/e2e/public-facade.spec.ts",
+        "owner": "selects duplicate names by address and rejects stale candidates before mutation",
+        "occurrence": 1,
+        "counts": {
+          "services": 2,
+          "characteristics": 1,
+          "descriptors": 0
+        },
+        "services": [
+          {
+            "characteristics": []
+          },
+          {
+            "characteristics": [
+              {
+                "descriptors": 0,
+                "properties": [
+                  "read"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cdp:packages/cdp/test/characteristic-operation-handler.chromium.test.ts:serves native characteristic and descriptor operations with ATT failures:0",
+        "family": "cdp",
+        "file": "packages/cdp/test/characteristic-operation-handler.chromium.test.ts",
+        "owner": "serves native characteristic and descriptor operations with ATT failures",
+        "occurrence": 0,
+        "counts": {
+          "services": 1,
+          "characteristics": 1,
+          "descriptors": 2
+        },
+        "services": [
+          {
+            "characteristics": [
+              {
+                "descriptors": 2,
+                "properties": [
+                  "read",
+                  "write",
+                  "write-without-response",
+                  "notify",
+                  "indicate"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "baselineMaximumMs": 21.113976999999977,
+  "measuredMs": 212,
+  "floorMs": 30000,
+  "commandDeadlineMs": 30000,
+  "performanceThresholdMs": 42.227953999999954
+}

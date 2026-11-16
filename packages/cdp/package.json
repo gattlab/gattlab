@@ -1,0 +1,41 @@
+{
+  "name": "@gattlab/cdp",
+  "version": "0.1.0-alpha.2",
+  "description": "Chromium CDP backend for GattLab.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@gattlab/core": "workspace:*",
+    "devtools-protocol": "0.0.1674729"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gattlab/gattlab.git",
+    "directory": "packages/cdp"
+  },
+  "homepage": "https://github.com/gattlab/gattlab/tree/main/packages/cdp#readme",
+  "bugs": {
+    "url": "https://github.com/gattlab/gattlab/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

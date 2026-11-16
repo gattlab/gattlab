@@ -1,0 +1,20 @@
+packages:
+  - packages/*
+
+# Delay newly published packages for one day unless a reviewed task records a
+# narrow exception. Accepted audit exceptions must use GHSA identifiers and
+# include their rationale in the commit that adds them.
+minimumReleaseAge: 1440
+auditConfig:
+  ignoreGhsas: []
+
+# GHSA-2v37-7h3g-55p8: vite pins postcss ^8.5.25, which still resolves nanoid 3.3.17.
+# The selector targets only the vulnerable range, so this entry goes inert once the
+# upstream chain moves past it and can then be removed.
+overrides:
+  nanoid@<3.3.18: ^3.3.18
+  # GHSA-68fv-2mgg-jv7q: postcss still resolves source-map-js 1.2.1.
+  # Limit the override to the affected range; 1.2.2 contains the security fix.
+  source-map-js@<1.2.2: ^1.2.2
+  # GHSA-g3hv-75wg-m249: transitive lint tooling still requests vulnerable minimatch.
+  minimatch@>=7.0.0 <11.0.1: 11.0.1

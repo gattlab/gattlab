@@ -1,0 +1,127 @@
+@implements IAsyncDisposable
+@inject BluetoothService Bluetooth
+
+<section>
+    <p data-testid="app-ready">@(ready ? "ready" : "initializing")</p>
+    <button id="connect" disabled="@(!ready || busy)" @onclick="Connect">Connect, read, and write</button>
+    <button id="cancel" disabled="@(!ready || busy)" @onclick="Choose">Open chooser for cancellation</button>
+    <button id="availability" disabled="@(!ready || busy)" @onclick="CheckAvailability">Check adapter availability</button>
+    <button id="subscribe" disabled="@(!ready || busy)" @onclick="Subscribe">Subscribe to notifications</button>
+    <button id="unsubscribe" disabled="@(!ready || busy)" @onclick="Unsubscribe">Unsubscribe from notifications</button>
+    <button id="tick" @onclick="Tick">Rerender panel</button>
+    <dl>
+        <dt>Session</dt><dd data-testid="session">@(session?.Id.ToString() ?? "--")</dd>
+        <dt>Status</dt><dd data-testid="status">@status</dd>
+        <dt>Battery</dt><dd data-testid="battery">@(result.Battery is int battery ? $"{battery}%" : "--")</dd>
+        <dt>Written</dt><dd data-testid="written">@(result.Written.Length > 0 ? string.Join(",", result.Written) : "--")</dd>
+        <dt>Error category</dt><dd data-testid="error-category">@(result.Error?.Category ?? "--")</dd>
+        <dt>Error name</dt><dd data-testid="error-name">@(result.Error?.Name ?? "--")</dd>
+        <dt>Error message</dt><dd data-testid="error-message">@(result.Error?.Message ?? "--")</dd>
+        <dt>Renders requested</dt><dd data-testid="ticks">@ticks</dd>
+    </dl>
+</section>
+
+@code {
+    private BluetoothSession? session;
+    private bool ready;
+    private bool busy;
+    private bool disposed;
+    private int ticks;
+    private string status = "initializing";
+    private BluetoothResult result = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var created = await Bluetooth.CreateSessionAsync();
+            if (disposed)
+            {
+                await created.DisposeAsync();
+                return;
+            }
+            session = created;
+            session.Disconnected += OnDisconnected;
+            ready = true;
+            status = "idle";
+        }
+        catch (Exception error)
+        {
+            SetInteropError(error);
+        }
+        if (!disposed) StateHasChanged();
+    }
+
+    private Task Connect() => RunAction("connect", "connectReadWrite", settled =>
+        settled.Success ? "ready" : settled.Kind);
+
+    private Task Choose() => RunAction("choose", "chooseOnly", settled =>
+        settled.Success ? "ready" : settled.Kind);
+
+    private Task CheckAvailability() => RunAction("availability", "checkAvailability", settled =>
+        settled.Success ? (settled.Available == true ? "available" : "unavailable") : settled.Kind);
+
+    private Task Subscribe() => RunAction("subscribe", "subscribe", settled =>
+        settled.Success ? "subscribed"
+        : settled.Error?.Category == "operation" ? "subscription-error"
+        : settled.Kind);
+
+    private Task Unsubscribe() => RunAction("unsubscribe", "unsubscribe", settled =>
+        settled.Success ? "unsubscribed"
+        : settled.Error?.Category == "operation" ? "unsubscription-error"
+        : settled.Kind);
+
+    private void Tick() => ticks++;
+
+    private async Task RunAction(string action, string method, Func<BluetoothResult, string> describe)
+    {
+        if (!ready || busy || disposed || session is null) return;
+        busy = true;
+        result = new();
+        status = "pending";
+        try
+        {
+            // The session exists already. No await precedes the chooser invocation.
+            var pending = session.InvokeAsync(action, method);
+            var settled = await pending;
+            // Null: this panel was disposed meanwhile and the log classified the result.
+            if (settled is null) return;
+            result = settled;
+            status = describe(settled);
+        }
+        catch (Exception error)
+        {
+            if (!disposed) SetInteropError(error);
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    private void SetInteropError(Exception error)
+    {
+        status = "interop-error";
+        result = new BluetoothResult
+        {
+            Error = new BluetoothError { Category = "interop", Name = error.GetType().Name, Message = error.Message }
+        };
+    }
+
+    private Task OnDisconnected() => InvokeAsync(() =>
+    {
+        if (disposed) return;
+        status = "disconnected";
+        StateHasChanged();
+    });
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+        if (session is null) return;
+        session.Disconnected -= OnDisconnected;
+        await session.DisposeAsync();
+    }
+}

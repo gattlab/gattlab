@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "stripInternal": true,
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+  },
+  "references": [{ "path": "../core" }, { "path": "../cdp" }],
+  "include": ["src/**/*.ts"]
+}

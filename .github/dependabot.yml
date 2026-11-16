@@ -1,0 +1,27 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 0
+    # Deliberately pinned in tools/toolchain-smoke.mjs and docs/compatibility.md;
+    # bumped only through reviewed chore(toolchain) commits, never by Dependabot.
+    ignore:
+      - dependency-name: devtools-protocol
+      - dependency-name: typescript
+      - dependency-name: playwright
+      - dependency-name: '@playwright/test'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:30'
+      timezone: Europe/Warsaw
+    open-pull-requests-limit: 0

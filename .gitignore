@@ -1,0 +1,13 @@
+# Disposable Node/Playwright probe output
+node_modules/
+.pnpm-store/
+test-results/
+playwright-report/
+
+# TypeScript workspace output
+dist/
+*.tsbuildinfo
+
+# Blazor sample build output (handwritten wwwroot stays tracked)
+examples/blazor-wasm/bin/
+examples/blazor-wasm/obj/

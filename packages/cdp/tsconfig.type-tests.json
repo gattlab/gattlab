@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "isolatedDeclarations": false,
+    "lib": ["ES2023", "DOM"],
+    "noEmit": true,
+    "sourceMap": false,
+    "types": ["node"]
+  },
+  "include": ["type-tests/**/*.ts"]
+}
