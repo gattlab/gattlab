@@ -1,9 +1,22 @@
 {
   "name": "@gattlab/cdp",
-  "version": "0.1.0-beta",
+  "version": "0.1.0-beta.1",
   "description": "Chromium CDP backend for GattLab.",
+  "keywords": [
+    "web-bluetooth",
+    "bluetooth",
+    "ble",
+    "gatt",
+    "chromium",
+    "cdp",
+    "devtools-protocol",
+    "testing"
+  ],
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "dist/**/*.d.ts",
     "dist/**/*.d.ts.map",

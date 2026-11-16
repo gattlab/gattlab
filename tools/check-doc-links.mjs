@@ -26,9 +26,16 @@ export function markdownAnchors(text) {
   return anchors;
 }
 
+// Links to this repository's main branch are checked like relative links.
+const repositoryLink =
+  /^https:\/\/github\.com\/gattlab\/gattlab\/(?:blob|tree)\/main\/([^#]*)(?:#(.*))?$/u;
+// Package READMEs are rendered on npm, where relative file links break.
+const publishedReadme = /^packages\/[^/]+\/README\.md$/u;
+
 /**
- * Lists broken relative links in Markdown files. `files` maps repository paths
- * to their text; external URLs are not checked.
+ * Lists broken relative links, and broken links to this repository's main
+ * branch, in Markdown files. `files` maps repository paths to their text;
+ * other external URLs are not checked.
  */
 export function brokenMarkdownLinks(files) {
   const problems = [];
@@ -38,12 +45,25 @@ export function brokenMarkdownLinks(files) {
       /!?\[[^\]\n]*\]\(([^\s)]+)(?:\s+"[^"\n]*")?\)/gu,
     )) {
       const href = match[1];
-      if (/^[a-z][a-z0-9+.-]*:/iu.test(href) || href.startsWith('//')) continue;
-      const [rawTarget, rawAnchor] = href.split('#');
+      const repository = repositoryLink.exec(href);
+      if (
+        !repository &&
+        (/^[a-z][a-z0-9+.-]*:/iu.test(href) || href.startsWith('//'))
+      )
+        continue;
+      const [rawTarget, rawAnchor] = repository
+        ? [repository[1], repository[2]]
+        : href.split('#');
+      if (!repository && rawTarget && publishedReadme.test(path)) {
+        problems.push(
+          `${path}: relative link ${href} breaks on npm; use a https://github.com/gattlab/gattlab/blob/main/ URL`,
+        );
+        continue;
+      }
       const target = rawTarget
         ? posix.normalize(
             posix.join(
-              posix.dirname(path),
+              repository ? '' : posix.dirname(path),
               decodeURIComponent(rawTarget).split('?')[0],
             ),
           )

@@ -2,16 +2,17 @@
 
 ## What is tested
 
-| Area                                 | Supported                                  | Tested                                                       |
-| ------------------------------------ | ------------------------------------------ | ------------------------------------------------------------ |
-| Playwright                           | Peer range `>=1.65.0 <2.0.0`               | 1.65.1 only; other versions in the range run as `unverified` |
-| Browser                              | Chromium through the native CDP backend    | Bundled headless Chromium 159.0.8154.6, CDP 1.3              |
-| Operating system                     | Linux (with a launch flag) and macOS arm64 | Ubuntu 24.04 in CI; macOS is not run in CI                   |
-| Headed mode, channels, custom builds | Not validated                              | No Chrome or Edge channel or headed-mode coverage            |
-| Windows and other platforms          | Unverified                                 | Not run in CI                                                |
-| TypeScript in consumer projects      | 5.9.3 and 6.0.3                            | 6.0.3 and 5.9.3, `strict` with `skipLibCheck: false`         |
-| Notifications                        | Subscribe/unsubscribe handshakes           | Notification values cannot be injected                       |
-| Secondary services, full BLE stack   | Not supported                              | Rejected, never converted to primary services                |
+| Area                                 | Supported                                  | Tested                                                                            |
+| ------------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------- |
+| Playwright                           | Peer range `>=1.65.0 <2.0.0`               | 1.65.1 only; other versions in the range run as `unverified`                      |
+| Node.js                              | 22 or newer (`engines`)                    | 26.11.1 in CI; the quick start also passed in a manual run on 22.23.5 and 24.22.3 |
+| Browser                              | Chromium through the native CDP backend    | Bundled headless Chromium 159.0.8154.6, CDP 1.3                                   |
+| Operating system                     | Linux (with a launch flag) and macOS arm64 | Ubuntu 24.04 in CI; macOS is not run in CI                                        |
+| Headed mode, channels, custom builds | Not validated                              | No Chrome or Edge channel or headed-mode coverage                                 |
+| Windows and other platforms          | Unverified                                 | Not run in CI                                                                     |
+| TypeScript in consumer projects      | 5.9.3 and 6.0.3                            | 6.0.3 and 5.9.3, `strict` with `skipLibCheck: false`                              |
+| Notifications                        | Subscribe/unsubscribe handshakes           | Notification values cannot be injected                                            |
+| Secondary services, full BLE stack   | Not supported                              | Rejected, never converted to primary services                                     |
 
 ## Browser and Playwright
 

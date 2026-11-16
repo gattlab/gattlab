@@ -4,13 +4,13 @@ Typed Chromium CDP implementation details for GattLab, published on npm as a
 prerelease under the `beta` tag. Application tests normally consume the
 `@gattlab/playwright` facade rather than instantiate these components.
 
-See the [consumer quick start](../../docs/quick-start.md),
-[advanced API semantics](../../docs/api.md#advanced-cdp-integration),
-[troubleshooting](../../docs/troubleshooting.md) and
-[compatibility matrix](../../docs/compatibility.md). Notification payloads
+See the [consumer quick start](https://github.com/gattlab/gattlab/blob/main/docs/quick-start.md),
+[advanced API semantics](https://github.com/gattlab/gattlab/blob/main/docs/api.md#advanced-cdp-integration),
+[troubleshooting](https://github.com/gattlab/gattlab/blob/main/docs/troubleshooting.md) and
+[compatibility matrix](https://github.com/gattlab/gattlab/blob/main/docs/compatibility.md). Notification payloads
 cannot be injected; the protocol has no command for it. One active lab owns the adapter per Chromium process. Recognized
 document-related emulation loss permanently invalidates that lab; see the
-[terminal contract](../../docs/api.md#terminal-lab-context).
+[terminal contract](https://github.com/gattlab/gattlab/blob/main/docs/api.md#terminal-lab-context).
 
 ## Production backend
 
@@ -76,7 +76,7 @@ omits the new field and exposes no new option.
 
 The default is far above how long these commands normally take; it bounds a
 command that Chromium never answers. See the
-[command deadline contract](../../docs/api.md#independent-command-and-application-deadlines).
+[command deadline contract](https://github.com/gattlab/gattlab/blob/main/docs/api.md#independent-command-and-application-deadlines).
 
 Started registration/preconnection/disconnect use one C across nested hierarchy
 sends, queueing and commit/publication. Deadline/cancellation after effects
@@ -108,7 +108,7 @@ its existing stopped contract. Pending work settles once; inspection and
 idempotent stop remain available.
 
 Advanced lifecycle integration methods on the returned backend are documented
-and linked to TSDoc in [the API table](../../docs/api.md#advanced-cdp-integration):
+and linked to TSDoc in [the API table](https://github.com/gattlab/gattlab/blob/main/docs/api.md#advanced-cdp-integration):
 
 | Method                                                    | Host contract                                                                                                                              |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -130,7 +130,7 @@ a new class. Optional `deadlineCheck` is non-enumerable and frozen;
 `CdpDeadlineCheckEvidence` carries phase `deadline-check`, command budget C,
 failed/timed-out/unconfirmed detection and actual check cause. The primary
 phase, original A/P/C and cause chain remain intact. See
-[timeout diagnostics](../../docs/troubleshooting.md#deadlines-and-teardown).
+[timeout diagnostics](https://github.com/gattlab/gattlab/blob/main/docs/troubleshooting.md#deadlines-and-teardown).
 
 For an already owned inactive session pair, choose omission or an explicit
 larger direct workload budget using the same options. This helper constructs
@@ -157,7 +157,7 @@ export function ownedFactory(
 // Choose one for each owned session pair/process lease.
 ```
 
-The [complete owned-session example](../../docs/api.md#advanced-cdp-integration)
+The [complete owned-session example](https://github.com/gattlab/gattlab/blob/main/docs/api.md#advanced-cdp-integration)
 shows startup and finally-stop without manually restarting a lab.
 
 ## Capability probe
@@ -169,7 +169,7 @@ targets. Every successfully enabled domain is disabled before `probe()`
 resolves.
 
 A complete typed example with session ownership and finally-detach is in
-[the advanced API guide](../../docs/api.md#advanced-cdp-integration).
+[the advanced API guide](https://github.com/gattlab/gattlab/blob/main/docs/api.md#advanced-cdp-integration).
 
 The Playwright CDP error surface does not expose JSON-RPC error codes. A failed
 domain command is therefore reported as failure of the required capability set
@@ -180,8 +180,8 @@ real-browser contracts recorded by the repository.
 On Linux, launch Chromium with `--enable-features=WebBluetooth`. The probe also
 requires the inspected page to use a secure context such as HTTPS or localhost.
 
-See the repository [compatibility baseline](../../docs/compatibility.md) and
-[protocol limitations](../../docs/protocol-limitations.md).
+See the repository [compatibility baseline](https://github.com/gattlab/gattlab/blob/main/docs/compatibility.md) and
+[protocol limitations](https://github.com/gattlab/gattlab/blob/main/docs/protocol-limitations.md).
 
 ## Pending operation registry
 
@@ -326,4 +326,4 @@ mode but omit prompt ids, candidate ids, names, and complete protocol payloads.
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](https://github.com/gattlab/gattlab/blob/main/LICENSE).

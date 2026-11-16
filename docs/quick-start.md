@@ -5,8 +5,8 @@ reads a battery level over Web Bluetooth, and a Playwright test that drives it
 with a virtual peripheral. No Bluetooth hardware is needed.
 
 GattLab is validated with Playwright 1.65.1 and its bundled headless Chromium
-159.0.8154.6 on Node.js 26.11.1. See [compatibility](compatibility.md) for
-other versions and platforms.
+159.0.8154.6 on Node.js 26.11.1. The packages require Node.js 22 or newer. See
+[compatibility](compatibility.md) for other versions and platforms.
 
 ## 1. Create the project
 

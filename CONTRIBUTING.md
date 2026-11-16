@@ -2,9 +2,10 @@
 
 ## Issues welcome, pull requests not yet accepted
 
-GattLab does not currently accept external code or documentation pull
-requests. Bug reports, feature requests and minimal reproductions are welcome
-as issues. Describe the user problem, expected behavior, supported browser
+GattLab is maintained by one person while the API settles before 1.0, so it
+does not currently accept external code or documentation pull requests. Bug
+reports, feature requests and minimal reproductions are welcome as issues and
+are the most useful way to help. Describe the user problem, expected behavior, supported browser
 tuple and, where applicable, a minimal reproduction. A process for external
 contributions may be introduced later; until then, unsolicited pull requests
 may be closed without review.

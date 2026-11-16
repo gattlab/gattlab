@@ -33,6 +33,37 @@ test('reports a missing target and a missing anchor', () => {
   ]);
 });
 
+test('checks links to the main branch of this repository', () => {
+  const base = 'https://github.com/gattlab/gattlab';
+  const files = new Map([
+    ['docs/guide.md', guide],
+    ['packages/core/README.md', '# Core\n'],
+    [
+      'packages/cdp/README.md',
+      `# CDP\n\n[Guide](${base}/blob/main/docs/guide.md#limits) ` +
+        `[Core](${base}/tree/main/packages/core) ` +
+        `[Gone](${base}/blob/main/docs/missing.md) ` +
+        `[Stale](${base}/blob/main/docs/guide.md#old-heading) ` +
+        `[Tag](${base}/blob/v1/docs/missing.md) [Top](#cdp)\n`,
+    ],
+  ]);
+  assert.deepEqual(brokenMarkdownLinks(files), [
+    `packages/cdp/README.md: missing link target ${base}/blob/main/docs/missing.md`,
+    `packages/cdp/README.md: missing anchor ${base}/blob/main/docs/guide.md#old-heading`,
+  ]);
+});
+
+test('rejects relative file links in package READMEs published to npm', () => {
+  const files = new Map([
+    ['docs/guide.md', guide],
+    ['packages/core/README.md', '# Core\n\n[Guide](../../docs/guide.md)\n'],
+    ['examples/app/README.md', '[Guide](../../docs/guide.md)\n'],
+  ]);
+  assert.deepEqual(brokenMarkdownLinks(files), [
+    'packages/core/README.md: relative link ../../docs/guide.md breaks on npm; use a https://github.com/gattlab/gattlab/blob/main/ URL',
+  ]);
+});
+
 test('derives GitHub-style anchors', () => {
   assert.deepEqual(
     [...markdownAnchors('# `Code` and *emphasis*\n## Step 2: run it\n')],

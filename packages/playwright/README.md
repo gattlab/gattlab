@@ -8,11 +8,11 @@ fixture-owned `BluetoothLab` facade from one import location.
 npm install --save-dev @gattlab/playwright@beta @playwright/test
 ```
 
-The [quick start](../../docs/quick-start.md) builds a minimal application and
-a first runnable test. See [API semantics](../../docs/api.md),
-[troubleshooting](../../docs/troubleshooting.md),
-[compatibility](../../docs/compatibility.md) and the terminal
-[document-destruction boundary](../../docs/protocol-limitations.md#document-destruction-and-process-reuse).
+The [quick start](https://github.com/gattlab/gattlab/blob/main/docs/quick-start.md) builds a minimal application and
+a first runnable test. See [API semantics](https://github.com/gattlab/gattlab/blob/main/docs/api.md),
+[troubleshooting](https://github.com/gattlab/gattlab/blob/main/docs/troubleshooting.md),
+[compatibility](https://github.com/gattlab/gattlab/blob/main/docs/compatibility.md) and the terminal
+[document-destruction boundary](https://github.com/gattlab/gattlab/blob/main/docs/protocol-limitations.md#document-destruction-and-process-reuse).
 
 ```ts
 import { bytes, expect, test } from '@gattlab/playwright';
@@ -112,7 +112,7 @@ await reconnectPrompt.select(sensor);
 ```
 
 Advertising before the new chooser opens is not persistent on the validated
-Chromium baseline. See the [reconnect lifecycle](../../docs/protocol-limitations.md#scripted-disconnection-and-reconnection).
+Chromium baseline. See the [reconnect lifecycle](https://github.com/gattlab/gattlab/blob/main/docs/protocol-limitations.md#scripted-disconnection-and-reconnection).
 
 Every handle's `operations()` returns a frozen, transport-neutral snapshot
 with defensive payload copies. `operationHistoryLimit` bounds each handle
@@ -266,7 +266,7 @@ idempotent and reportable cleanup failures, including closed-page session
 failures, do not erase terminal context.
 
 See the
-[command deadline contract](../../docs/api.md#independent-command-and-application-deadlines).
+[command deadline contract](https://github.com/gattlab/gattlab/blob/main/docs/api.md#independent-command-and-application-deadlines).
 
 ## Errors
 
@@ -311,4 +311,4 @@ Run them with `pnpm test:playwright` and
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](https://github.com/gattlab/gattlab/blob/main/LICENSE).

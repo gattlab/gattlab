@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.0-beta.1 — 2026-11-16
+
+- Packages declare `engines.node >=22` and npm `keywords`. Node.js 26.11.1 is
+  the validated version; the quick start also passed in a manual run on
+  Node.js 22.23.5 and 24.22.3. See [compatibility](docs/compatibility.md).
+- Package READMEs link to the documentation with full GitHub URLs, so the
+  links work on npm. The Markdown link check also verifies those URLs and
+  rejects relative links in package READMEs.
+- The notification limitation links to a tracking issue, and the contributing
+  guide explains why pull requests are not accepted yet.
+- No runtime code changes.
+
 ## 0.1.0-beta — 2026-11-16
 
 - First beta, published on npm under the `beta` tag.

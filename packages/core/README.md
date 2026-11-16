@@ -11,12 +11,12 @@ tests need only `@gattlab/playwright`, which depends on it and re-exports
 `bytes`. Import only from `@gattlab/core`; internal module paths are not public
 API.
 
-See the [quick start](../../docs/quick-start.md),
-[API semantics](../../docs/api.md), [troubleshooting](../../docs/troubleshooting.md)
-and [compatibility](../../docs/compatibility.md). The production backend is
+See the [quick start](https://github.com/gattlab/gattlab/blob/main/docs/quick-start.md),
+[API semantics](https://github.com/gattlab/gattlab/blob/main/docs/api.md), [troubleshooting](https://github.com/gattlab/gattlab/blob/main/docs/troubleshooting.md)
+and [compatibility](https://github.com/gattlab/gattlab/blob/main/docs/compatibility.md). The production backend is
 experimental Chromium CDP with one active adapter owner per process. Notification
 payloads cannot be injected. See the
-[document-destruction limitation](../../docs/protocol-limitations.md#document-destruction-and-process-reuse).
+[document-destruction limitation](https://github.com/gattlab/gattlab/blob/main/docs/protocol-limitations.md#document-destruction-and-process-reuse).
 
 ## Define and validate a peripheral
 
@@ -141,10 +141,10 @@ silently lost.
 - Injected ATT/HCI names are scripting inputs. Native Web Bluetooth failures
   may surface only as generic application exceptions; the mapping is one-way.
 
-See [protocol limitations](../../docs/protocol-limitations.md) and the
-[public API reference](../../docs/api.md#normalize-bytes-and-models) for model
+See [protocol limitations](https://github.com/gattlab/gattlab/blob/main/docs/protocol-limitations.md) and the
+[public API reference](https://github.com/gattlab/gattlab/blob/main/docs/api.md#normalize-bytes-and-models) for model
 validation and the boundary between domain values and browser behavior.
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](https://github.com/gattlab/gattlab/blob/main/LICENSE).

@@ -59,6 +59,8 @@ npm install --save-dev @gattlab/playwright@beta @playwright/test
 npx playwright install chromium
 ```
 
+The packages require Node.js 22 or newer.
+
 Enable Web Bluetooth on Linux in `playwright.config.ts`:
 
 ```ts
@@ -102,7 +104,9 @@ This is a Chromium limitation. GattLab works through Chromium's experimental
 answering reads, writes and subscription requests but none for pushing a new
 value to a subscribed characteristic. Until such a command exists, test the
 code that handles `characteristicvaluechanged` separately, for example by
-unit-testing the function that parses its value.
+unit-testing the function that parses its value. Subscribe to
+[issue #1](https://github.com/gattlab/gattlab/issues/1) to hear when this
+changes.
 
 ## Why not …
 
@@ -187,7 +191,8 @@ layering.
 ## Contributing
 
 Bug reports, feature requests and minimal reproductions are welcome as issues.
-Pull requests are not accepted yet; see [contributing](CONTRIBUTING.md).
+Pull requests are not accepted yet: GattLab is maintained by one person while
+the API settles before 1.0. See [contributing](CONTRIBUTING.md).
 
 To build and validate from source, use the pinned Node.js and pnpm versions from
 `.node-version` and `package.json`:
