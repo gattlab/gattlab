@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0-beta — Unreleased
+## 0.1.0-beta — 2026-11-16
 
 - First beta, published on npm under the `beta` tag.
 - The `@gattlab/playwright` peer range is now `@playwright/test >=1.65.0 <2.0.0`,
