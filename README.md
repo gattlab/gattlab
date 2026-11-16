@@ -142,13 +142,28 @@ The complete list, with the observations behind each item, is in
 
 ## How it works
 
+This is what happens when the [example](#example) above runs:
+
 ```mermaid
-flowchart LR
-  Test[Playwright test] --> Fixture[GattLab fixture]
-  Fixture --> CDP[Chromium DevTools protocol]
-  CDP --> Adapter[Virtual Bluetooth adapter]
-  Adapter --> App[Your app via navigator.bluetooth]
-  App --> Assertions[UI and operation assertions]
+%%{init: {"sequence": {"mirrorActors": false, "actorMargin": 30}}}%%
+sequenceDiagram
+  participant T as Your test
+  participant G as GattLab
+  participant A as Your app
+  participant V as Virtual adapter<br/>(Chromium)
+  T->>G: createPeripheral()
+  G->>V: register peripheral
+  T->>G: reads.queue([87])
+  T->>A: click "Connect"
+  A->>V: requestDevice()
+  V-->>G: chooser opened
+  T->>G: select(sensor)
+  G->>V: pick peripheral
+  A->>V: connect, read
+  V-->>G: GATT requests
+  G->>V: answers (read: [87])
+  V-->>A: value 87
+  T->>A: expect "87%"
 ```
 
 The fixture starts lazily on the first `bluetooth` call, answers every browser
