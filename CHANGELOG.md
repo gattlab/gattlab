@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0-beta.2 — 2026-11-20
 
 - Playwright tests can [hold one GATT connection response](docs/api.md#hold-a-connection-response)
   while asserting the application's pending state, then resume the connection
