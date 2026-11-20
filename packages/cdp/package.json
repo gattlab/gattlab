@@ -1,6 +1,6 @@
 {
   "name": "@gattlab/cdp",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "description": "Chromium CDP backend for GattLab.",
   "keywords": [
     "web-bluetooth",
