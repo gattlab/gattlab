@@ -1,6 +1,7 @@
 import {
   attErrorNames,
   BluetoothBackendStoppedError,
+  BluetoothCancelledError,
   BluetoothPeripheralAlreadyRegisteredError,
   BluetoothTimeoutError,
   BluetoothValidationError,
@@ -40,6 +41,20 @@ export interface GattResponseQueue {
   queueSuccess(): void;
   /** Queue one named HCI failure for the next matching operation. */
   queueError(error: HciErrorName): void;
+}
+
+export interface ConnectionResponseQueue extends GattResponseQueue {
+  /** Hold the response to one connection request in FIFO order. */
+  holdNext(): HeldConnection;
+}
+
+export interface HeldConnection {
+  /** Wait for the matching request without changing the queue on timeout. */
+  waitForRequest(): Promise<void>;
+  /** Release the successful response after the request arrives. */
+  resume(): Promise<void>;
+  /** Remove this hold if a request has not claimed it yet. */
+  cancel(): boolean;
 }
 
 export interface ReadResponseQueue {
@@ -181,7 +196,7 @@ export interface CharacteristicHandle {
 export interface PeripheralHandle {
   readonly address: BluetoothAddress;
   readonly name: string;
-  readonly connection: GattResponseQueue;
+  readonly connection: ConnectionResponseQueue;
   readonly discovery: GattResponseQueue;
   /** Send the separately defined advertisement scan data. */
   advertise(): Promise<void>;
@@ -199,7 +214,11 @@ export interface PeripheralHandle {
 /** @internal */
 export interface BluetoothHandleBackend extends Pick<
   CdpBluetoothBackend,
-  'assertUsable' | 'withCommandBudget' | 'checkLiveness' | 'diagnoseTimeout'
+  | 'assertUsable'
+  | 'withCommandBudget'
+  | 'checkLiveness'
+  | 'diagnoseTimeout'
+  | 'onGattOperationInterrupted'
 > {
   addPeripheral(
     peripheral: NormalizedPeripheral,
@@ -278,6 +297,13 @@ class ResponseQueue<T> {
 
   push(response: T): void {
     this.#responses.push(response);
+  }
+
+  remove(response: T): boolean {
+    const index = this.#responses.indexOf(response);
+    if (index < 0) return false;
+    this.#responses.splice(index, 1);
+    return true;
   }
 
   clear(): void {
@@ -448,13 +474,172 @@ interface HandleOwner {
   ): Promise<T>;
 }
 
-class GattResponseQueueFacade implements GattResponseQueue {
-  readonly #owner: HandleOwner;
-  readonly #queue: ResponseQueue<PeripheralOperationResponse>;
+class HeldConnectionState {
+  readonly handle: HeldConnection;
+  readonly #forget: () => void;
+  readonly #waits: WaitGroup<void>;
+  #release: (() => Promise<void>) | undefined;
+  #prepared: PreparedOperation | undefined;
+  #unsubscribe: (() => void) | undefined;
+  #interruptDelivery: ((cause: unknown) => void) | undefined;
+  #delivery: Promise<void> | undefined;
+  #failure: { cause: unknown } | undefined;
+  #assigned = false;
+  #finished = false;
 
   constructor(
     owner: HandleOwner,
-    queue: ResponseQueue<PeripheralOperationResponse>,
+    scheduler: HandleDeadlineScheduler,
+    timeoutMs: number,
+    address: BluetoothAddress,
+    remove: () => boolean,
+    forget: () => void,
+  ) {
+    this.#forget = forget;
+    this.#waits = new WaitGroup<void>(scheduler, () => undefined);
+    this.handle = Object.freeze({
+      waitForRequest: () => {
+        owner.assertActive('waitForRequest');
+        return this.#waitForRequest(address, timeoutMs);
+      },
+      resume: () => {
+        owner.assertActive('resume');
+        return this.#resume();
+      },
+      cancel: () => {
+        owner.assertActive('cancel');
+        if (!remove()) return false;
+        this.abort(
+          new BluetoothCancelledError(
+            'The queued connection hold was cancelled.',
+            {
+              context: {
+                address,
+                operation: 'cancel',
+                operationLayer: 'playwright',
+              },
+            },
+          ),
+        );
+        return true;
+      },
+    });
+  }
+
+  bind(
+    backend: BluetoothHandleBackend,
+    id: string,
+    prepared: PreparedOperation,
+    release: () => Promise<void>,
+  ): void {
+    this.#prepared = prepared;
+    this.#release = release;
+    try {
+      this.#unsubscribe = backend.onGattOperationInterrupted(id, (error) => {
+        this.abort(error);
+      });
+    } catch (cause) {
+      this.abort(cause);
+      throw cause;
+    }
+    this.#assigned = true;
+    this.#waits.resolve(undefined);
+  }
+
+  assertUninterrupted(): void {
+    if (this.#failure !== undefined) throw this.#failure.cause;
+  }
+
+  abort(cause: unknown): void {
+    if (this.#finished) return;
+    const deliveryCause =
+      typeof cause === 'function'
+        ? (cause as (operation: string) => unknown)('resume')
+        : cause;
+    this.#failure = { cause: deliveryCause };
+    this.#waits.reject(cause);
+    this.#prepared?.abort();
+    this.#interruptDelivery?.(deliveryCause);
+    this.#finish();
+  }
+
+  async #waitForRequest(
+    address: BluetoothAddress,
+    timeoutMs: number,
+  ): Promise<void> {
+    this.assertUninterrupted();
+    if (this.#assigned) return;
+    return this.#waits.wait(
+      'waitForRequest',
+      timeoutMs,
+      () =>
+        new BluetoothTimeoutError(
+          'The held connection did not receive a request.',
+          {
+            context: {
+              address,
+              deadlineMs: timeoutMs,
+              deadlineKind: 'application-operation',
+              timeoutPhase: 'operation',
+              operation: 'waitForRequest',
+              operationLayer: 'playwright',
+            },
+          },
+        ),
+      () => Promise.resolve(),
+      (timeout) => Promise.reject(timeout),
+    );
+  }
+
+  async #resume(): Promise<void> {
+    this.assertUninterrupted();
+    if (this.#delivery !== undefined) return this.#delivery;
+    const release = this.#release;
+    if (release === undefined) {
+      throw new BluetoothValidationError(
+        'The held connection has not received a request.',
+        {
+          context: {
+            operation: 'resume',
+            operationLayer: 'playwright',
+            reason: 'connection-request-not-received',
+          },
+        },
+      );
+    }
+    const interruption = new Promise<never>((_resolve, reject) => {
+      this.#interruptDelivery = reject;
+    });
+    this.#delivery = Promise.race([interruption, release()]).then(
+      () => {
+        this.#finish();
+      },
+      (cause: unknown) => {
+        this.abort(cause);
+        throw cause;
+      },
+    );
+    return this.#delivery;
+  }
+
+  #finish(): void {
+    this.#finished = true;
+    this.#unsubscribe?.();
+    this.#unsubscribe = undefined;
+    this.#release = undefined;
+    this.#prepared = undefined;
+    this.#interruptDelivery = undefined;
+    this.#forget();
+  }
+}
+
+class GattResponseQueueFacade implements GattResponseQueue {
+  readonly #owner: HandleOwner;
+  readonly #queue: Pick<ResponseQueue<PeripheralOperationResponse>, 'push'>;
+
+  constructor(
+    owner: HandleOwner,
+    queue: Pick<ResponseQueue<PeripheralOperationResponse>, 'push'>,
   ) {
     this.#owner = owner;
     this.#queue = queue;
@@ -590,10 +775,12 @@ class PeripheralHandleState {
   readonly definition: NormalizedPeripheral;
   readonly handle: PeripheralHandle;
   readonly #owner: HandleOwner;
-  readonly #connectionResponses =
-    new ResponseQueue<PeripheralOperationResponse>();
+  readonly #connectionResponses = new ResponseQueue<
+    PeripheralOperationResponse | HeldConnectionState
+  >();
   readonly #discoveryResponses =
     new ResponseQueue<PeripheralOperationResponse>();
+  readonly #heldConnections = new Set<HeldConnectionState>();
   readonly #journal: BoundedJournal<PeripheralOperationRecord>;
   readonly #characteristics = new Map<string, CharacteristicHandleState>();
   readonly #counters = createGattCounters();
@@ -628,9 +815,36 @@ class PeripheralHandleState {
         );
       }
     }
+    const connection = new GattResponseQueueFacade(
+      owner,
+      this.#connectionResponses,
+    );
     this.handle = new FixturePeripheralHandle(
       this,
-      new GattResponseQueueFacade(owner, this.#connectionResponses),
+      Object.freeze({
+        queueSuccess: () => {
+          connection.queueSuccess();
+        },
+        queueError: (error: HciErrorName) => {
+          connection.queueError(error);
+        },
+        holdNext: () => {
+          owner.assertActive('holdNext');
+          const held: HeldConnectionState = new HeldConnectionState(
+            owner,
+            options.scheduler,
+            options.operationTimeoutMs,
+            definition.address,
+            () => this.#connectionResponses.remove(held),
+            () => {
+              this.#heldConnections.delete(held);
+            },
+          );
+          this.#heldConnections.add(held);
+          this.#connectionResponses.push(held);
+          return held.handle;
+        },
+      }),
       new GattResponseQueueFacade(owner, this.#discoveryResponses),
     );
   }
@@ -673,7 +887,8 @@ class PeripheralHandleState {
     event: GattOperationEvent,
     backend: BluetoothHandleBackend,
     sequence: number,
-  ): PreparedOperation {
+    schedule: (prepared: PreparedOperation) => Promise<void>,
+  ): PreparedOperation | undefined {
     const queue =
       event.type === 'connection'
         ? this.#connectionResponses
@@ -681,6 +896,14 @@ class PeripheralHandleState {
     const selected = queue.select(
       () => defaultGattResponses[this.definition.defaults[event.type]],
     );
+    const held =
+      selected.response instanceof HeldConnectionState
+        ? selected.response
+        : undefined;
+    const response =
+      selected.response instanceof HeldConnectionState
+        ? defaultGattResponses.success
+        : selected.response;
     const request = Object.freeze({ type: event.type });
     let recorded = false;
     const record = (delivery: OperationResponseDelivery): void => {
@@ -690,7 +913,7 @@ class PeripheralHandleState {
         Object.freeze({
           sequence,
           request,
-          response: selected.response,
+          response,
           responseSource: selected.source,
           responseDelivery: delivery,
         }),
@@ -704,16 +927,18 @@ class PeripheralHandleState {
       let failure: unknown;
       try {
         assertCommit();
+        held?.assertUninterrupted();
         await backend.respondToGattOperation(
           {
             operationId: event.operationId,
             type: event.type,
-            ...selected.response,
+            ...response,
           },
           options,
         );
         assertCommit();
-        this.#counters[event.type][selected.response.result] += 1;
+        held?.assertUninterrupted();
+        this.#counters[event.type][response.result] += 1;
       } catch (cause) {
         delivery = 'failed';
         failure = cause;
@@ -721,11 +946,14 @@ class PeripheralHandleState {
       record(delivery);
       if (delivery === 'failed') throw failure;
     };
-    return Object.assign(deliver, {
+    const prepared = Object.assign(deliver, {
       abort: () => {
         record('failed');
       },
     });
+    if (held === undefined) return prepared;
+    held.bind(backend, event.operationId, prepared, () => schedule(prepared));
+    return undefined;
   }
 
   prepareCharacteristic(
@@ -796,6 +1024,7 @@ class PeripheralHandleState {
   dispose(cause: unknown): void {
     this.#connectionResponses.clear();
     this.#discoveryResponses.clear();
+    for (const held of this.#heldConnections) held.abort(cause);
     for (const characteristic of this.#characteristics.values()) {
       characteristic.dispose(cause);
     }
@@ -803,13 +1032,13 @@ class PeripheralHandleState {
 }
 
 class FixturePeripheralHandle implements PeripheralHandle {
-  readonly connection: GattResponseQueue;
+  readonly connection: ConnectionResponseQueue;
   readonly discovery: GattResponseQueue;
   readonly #state: PeripheralHandleState;
 
   constructor(
     state: PeripheralHandleState,
-    connection: GattResponseQueue,
+    connection: ConnectionResponseQueue,
     discovery: GattResponseQueue,
   ) {
     this.#state = state;
@@ -1606,36 +1835,48 @@ export class BluetoothHandleController implements HandleOwner {
     if (peripheral === undefined) return;
     const sequence = this.#nextSequence;
     this.#nextSequence += 1;
-    const prepared =
-      copiedEvent.kind === 'gatt-operation'
-        ? peripheral.prepare(copiedEvent, backend, sequence)
-        : copiedEvent.kind === 'characteristic-operation'
-          ? peripheral.prepareCharacteristic(copiedEvent, backend, sequence)
-          : peripheral.prepareDescriptor(copiedEvent, backend, sequence);
-    if (prepared === undefined) return;
     const operation =
       copiedEvent.kind === 'gatt-operation'
         ? 'respondToGattOperation'
         : copiedEvent.kind === 'characteristic-operation'
           ? 'respondToCharacteristicOperation'
           : 'respondToDescriptorOperation';
+    const prepared =
+      copiedEvent.kind === 'gatt-operation'
+        ? peripheral.prepare(copiedEvent, backend, sequence, (response) =>
+            this.#scheduleResponse(backend, operation, response),
+          )
+        : copiedEvent.kind === 'characteristic-operation'
+          ? peripheral.prepareCharacteristic(copiedEvent, backend, sequence)
+          : peripheral.prepareDescriptor(copiedEvent, backend, sequence);
+    if (prepared !== undefined) {
+      void this.#scheduleResponse(backend, operation, prepared).catch(
+        () => undefined,
+      );
+    }
+  }
+
+  async #scheduleResponse(
+    backend: BluetoothHandleBackend,
+    operation: string,
+    prepared: PreparedOperation,
+  ): Promise<void> {
     const previous = this.#responseChain;
-    let callbackEntered = false;
-    let preparedStarted = false;
+    const state = { callbackEntered: false, preparedStarted: false };
     let releaseQueue: () => void = () => undefined;
     this.#responseChain = new Promise<void>((resolve) => {
       releaseQueue = resolve;
     });
-    void backend
-      .withCommandBudget(
+    try {
+      await backend.withCommandBudget(
         operation,
         'playwright',
         async (options, assertCommit) => {
-          callbackEntered = true;
+          state.callbackEntered = true;
           try {
             await previous;
-            if (preparedStarted) return;
-            preparedStarted = true;
+            if (state.preparedStarted) return;
+            state.preparedStarted = true;
             await prepared(options, () => {
               assertCommit();
               this.assertActive(operation);
@@ -1644,15 +1885,13 @@ export class BluetoothHandleController implements HandleOwner {
             releaseQueue();
           }
         },
-      )
-      .catch(() => {
-        prepared.abort();
-        if (!preparedStarted) {
-          preparedStarted = true;
-          prepared.abort();
-        }
-        if (!callbackEntered) releaseQueue();
-      });
+      );
+    } catch (cause) {
+      prepared.abort();
+      state.preparedStarted = true;
+      if (!state.callbackEntered) void previous.then(releaseQueue);
+      throw cause;
+    }
   }
 }
 

@@ -4,6 +4,7 @@ import {
   expect,
   test,
   type GattLabFixtureOptions,
+  type HeldConnection,
 } from '../src/index.js';
 
 export const defaultOptions = {} satisfies GattLabFixtureOptions;
@@ -87,6 +88,15 @@ test('public peripheral read contract', async ({ page, bluetooth }) => {
   // @ts-expect-error Operation snapshots are immutable.
   batteryLevel.operations().push(undefined);
 });
+
+export async function exerciseHeldConnection(
+  held: HeldConnection,
+): Promise<void> {
+  await held.waitForRequest();
+  await held.resume();
+  // @ts-expect-error Consumer handles do not expose correlation ids.
+  void held.operationId;
+}
 
 test('internal fixture is hidden', ({
   // @ts-expect-error The diagnostic buffer is not a consumer fixture.

@@ -54,8 +54,8 @@ try {
   await assertServerProcessesExited(consumerRoot, 3);
   assert.match(
     repeatedOutput,
-    /33 passed/u,
-    'The eleven passing cases must complete three sequential repetitions.',
+    /\b36 passed\b/u,
+    'The twelve passing cases must complete three sequential repetitions.',
   );
 
   const regressionOutput = runChecked(
@@ -113,7 +113,7 @@ try {
   );
 
   console.log(
-    `Vanilla TypeScript sample probe passed: strict sample and installed scenario and regression checks on TypeScript ${compilerVersions.join(' + ')}, isolated tarball install, 11 scenarios x 3 runs (33 passed) and 6 regression tests (6 passed) in real Chromium, and 1 expected assertion failure with 4 inspected redacted artifacts; all 5 registered sample servers exited.`,
+    `Vanilla TypeScript sample probe passed: strict sample and installed scenario and regression checks on TypeScript ${compilerVersions.join(' + ')}, isolated tarball install, 12 scenarios x 3 runs (36 passed) and 6 regression tests (6 passed) in real Chromium, and 1 expected assertion failure with 4 inspected redacted artifacts; all 5 registered sample servers exited.`,
   );
 } finally {
   try {

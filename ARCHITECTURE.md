@@ -64,6 +64,8 @@ operations use explicit queues and deadlines rather than arbitrary sleeps.
 - A response validates operation id, family, references and error names before
   mutation. There is one pending operation per entity/type; listener failures
   cancel their registration. No parallel correlation map bypasses the registry.
+- A held Playwright connection enters the shared send queue when resumed.
+  CDP still owns its pending deadline and notifies the handle if it is interrupted.
 - A scripted disconnect restores the GATT hierarchy before resolving, retaining
   public handles and queues. A new chooser must open before explicit advertising.
 - Confirmed adapter loss and uncertain partial model mutations permanently

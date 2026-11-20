@@ -83,7 +83,8 @@ Web Bluetooth requires a secure context, so open your application on
 ## What a test can script
 
 - The device chooser: select a peripheral or cancel the prompt.
-- Connection, succeeding or failing with HCI errors, and service discovery.
+- Connection, including success, HCI errors and a response held until
+  `resume()` to test the application's waiting state, plus service discovery.
 - Characteristic and descriptor reads and writes: queued values, ATT errors and
   the recorded bytes and write type of every write.
 - `startNotifications()` and `stopNotifications()` handshakes.

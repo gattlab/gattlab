@@ -42,6 +42,10 @@ interface HandleHarness {
   readonly stop: ReturnType<typeof vi.fn>;
   readonly withBackend: ReturnType<typeof vi.fn>;
   emit(event: BackendBluetoothEvent): void;
+  interrupt(
+    operationId: string,
+    error: BluetoothTimeoutError | BluetoothCancelledError,
+  ): void;
 }
 
 interface ManualEntry {
@@ -120,6 +124,10 @@ function createHarness(
     (response: DescriptorOperationResponse) => Promise<void>
   >(async () => undefined);
   const invalidationListeners = new Set<(record: CdpLabInvalidation) => void>();
+  const interruptions = new Map<
+    string,
+    (error: BluetoothTimeoutError | BluetoothCancelledError) => void
+  >();
   let invalidation: CdpLabInvalidation | undefined;
   const assertUsable = (operation: string): void => {
     if (invalidation === undefined) return;
@@ -159,6 +167,17 @@ function createHarness(
     createPreconnectedPeripheral,
     disconnect,
     respondToGattOperation,
+    onGattOperationInterrupted(
+      operationId: string,
+      listener: (
+        error: BluetoothTimeoutError | BluetoothCancelledError,
+      ) => void,
+    ) {
+      interruptions.set(operationId, listener);
+      return () => {
+        interruptions.delete(operationId);
+      };
+    },
     respondToCharacteristicOperation,
     respondToDescriptorOperation,
     onEvent(nextListener) {
@@ -215,6 +234,9 @@ function createHarness(
     emit(event) {
       listener?.(event);
     },
+    interrupt(operationId, error) {
+      interruptions.get(operationId)?.(error);
+    },
   };
 }
 
@@ -269,6 +291,162 @@ function characteristicEvent(
 async function flushOperations(): Promise<void> {
   for (let index = 0; index < 20; index += 1) await Promise.resolve(undefined);
 }
+
+function connectionEvent(
+  operationId: string,
+  type: 'connection' | 'discovery' = 'connection',
+  address = normalizeBluetoothAddress('09:09:09:09:09:09'),
+): BackendBluetoothEvent {
+  return {
+    kind: 'gatt-operation',
+    operationId,
+    type,
+    peripheral: {
+      kind: 'peripheral',
+      address,
+    },
+  };
+}
+
+describe('held connection responses', () => {
+  it('keeps FIFO selection and schedules delivery only when released', async () => {
+    const harness = createHarness();
+    const lab = createBluetoothLab(harness.runtime, harness.scheduler);
+    const peripheral = await lab.createPeripheral(peripheralDefinition());
+    const other = await lab.createPeripheral({
+      ...peripheralDefinition(),
+      address: '09:09:09:09:09:08',
+    });
+    peripheral.connection.queueSuccess();
+    const held = peripheral.connection.holdNext();
+    await expect(held.resume()).rejects.toBeInstanceOf(Error);
+    const requested = held.waitForRequest();
+    harness.emit(connectionEvent('initial'));
+    harness.emit(connectionEvent('held'));
+    harness.emit(connectionEvent('independent', 'discovery'));
+    harness.emit(connectionEvent('other-peer', 'connection', other.address));
+    await requested;
+    await flushOperations();
+    expect(
+      harness.respondToGattOperation.mock.calls.map(
+        ([response]) => response.operationId,
+      ),
+    ).toEqual(['initial', 'independent', 'other-peer']);
+    await Promise.all([held.resume(), held.resume()]);
+    expect(
+      harness.respondToGattOperation.mock.calls.map(
+        ([response]) => response.operationId,
+      ),
+    ).toEqual(['initial', 'independent', 'other-peer', 'held']);
+    expect(
+      peripheral.operations().find(({ sequence }) => sequence === 2),
+    ).toMatchObject({
+      responseSource: 'queued',
+      responseDelivery: 'succeeded',
+    });
+    await lab.dispose();
+  });
+
+  it('observes the wait budget without changing the queue and cancels explicitly', async () => {
+    const harness = createHarness({ operationTimeoutMs: 45_000 });
+    const lab = createBluetoothLab(harness.runtime, harness.scheduler);
+    const peripheral = await lab.createPeripheral(peripheralDefinition());
+    const held = peripheral.connection.holdNext();
+    const firstWait = expect(held.waitForRequest()).rejects.toBeInstanceOf(
+      BluetoothTimeoutError,
+    );
+    await flushOperations();
+    expect(harness.scheduler.activeBudgets).toEqual([45_000]);
+    harness.scheduler.advance(45_000);
+    await firstWait;
+    const secondWait = expect(held.waitForRequest()).rejects.toBeInstanceOf(
+      BluetoothCancelledError,
+    );
+    expect(held.cancel()).toBe(true);
+    expect(held.cancel()).toBe(false);
+    await secondWait;
+    harness.emit(connectionEvent('after-cancel'));
+    await flushOperations();
+    expect(harness.respondToGattOperation).toHaveBeenCalledOnce();
+    await lab.dispose();
+  });
+
+  it('retains the exact interruption and journals it even without resume', async () => {
+    const harness = createHarness();
+    const lab = createBluetoothLab(harness.runtime, harness.scheduler);
+    const peripheral = await lab.createPeripheral(peripheralDefinition());
+    const held = peripheral.connection.holdNext();
+    harness.emit(connectionEvent('held'));
+    await held.waitForRequest();
+    expect(held.cancel()).toBe(false);
+    const error = new BluetoothTimeoutError('registry deadline');
+    harness.interrupt('held', error);
+    expect(peripheral.operations()).toMatchObject([
+      { responseSource: 'queued', responseDelivery: 'failed' },
+    ]);
+    await expect(held.resume()).rejects.toBe(error);
+    expect(harness.respondToGattOperation).not.toHaveBeenCalled();
+    await lab.dispose();
+  });
+
+  it('clears unassigned observations and bound responses on disposal', async () => {
+    const harness = createHarness();
+    const lab = createBluetoothLab(harness.runtime, harness.scheduler);
+    const peripheral = await lab.createPeripheral(peripheralDefinition());
+    const held = peripheral.connection.holdNext();
+    const waiting = peripheral.connection.holdNext();
+    const stopped = expect(waiting.waitForRequest()).rejects.toBeInstanceOf(
+      BluetoothBackendStoppedError,
+    );
+    harness.emit(connectionEvent('held'));
+    await held.waitForRequest();
+    await lab.dispose();
+    await stopped;
+    expect(() => peripheral.connection.holdNext()).toThrow(
+      BluetoothBackendStoppedError,
+    );
+    expect(() => waiting.cancel()).toThrow(BluetoothBackendStoppedError);
+    expect(() => {
+      void held.waitForRequest().catch(() => undefined);
+    }).toThrow(BluetoothBackendStoppedError);
+    expect(() => {
+      void held.resume().catch(() => undefined);
+    }).toThrow(BluetoothBackendStoppedError);
+    expect(harness.scheduler.activeCount).toBe(0);
+    expect(harness.respondToGattOperation).not.toHaveBeenCalled();
+    expect(peripheral.operations()).toMatchObject([
+      { responseDelivery: 'failed' },
+    ]);
+  });
+
+  it('lets an interruption win while a resumed response waits to send', async () => {
+    const active = deferredOperation<undefined>();
+    const harness = createHarness({
+      respondToGattOperation: () => active.promise,
+    });
+    const lab = createBluetoothLab(harness.runtime, harness.scheduler);
+    const peripheral = await lab.createPeripheral(peripheralDefinition());
+    harness.emit(connectionEvent('independent', 'discovery'));
+    const held = peripheral.connection.holdNext();
+    harness.emit(connectionEvent('held'));
+    await held.waitForRequest();
+
+    const error = new BluetoothCancelledError('disconnected while queued');
+    const release = expect(held.resume()).rejects.toBe(error);
+    const duplicate = expect(held.resume()).rejects.toBe(error);
+    harness.interrupt('held', error);
+    await Promise.all([release, duplicate]);
+    active.resolve(undefined);
+    await flushOperations();
+    expect(harness.respondToGattOperation).toHaveBeenCalledOnce();
+    expect(
+      peripheral
+        .operations()
+        .filter(({ request }) => request.type === 'connection'),
+    ).toMatchObject([{ responseDelivery: 'failed' }]);
+    await lab.dispose();
+  });
+});
 
 describe('Bluetooth public handles', () => {
   it('validates before lazy start and rejects normalized duplicate addresses', async () => {
@@ -1079,6 +1257,41 @@ describe('public handle lifecycle', () => {
     harness.scheduler.expireAll();
     await rejection;
     expect(characteristic.operations()).toHaveLength(2);
+  });
+
+  it('preserves response order when a budget rejects before entering the queue callback', async () => {
+    const harness = createHarness();
+    const bluetooth = createBluetoothLab(harness.runtime, harness.scheduler);
+    const peripheral = await bluetooth.createPeripheral(peripheralDefinition());
+    const first = deferredOperation<undefined>();
+    harness.respondToGattOperation.mockImplementationOnce(() => first.promise);
+
+    harness.emit(connectionEvent('first'));
+    await flushOperations();
+    expect(harness.respondToGattOperation).toHaveBeenCalledOnce();
+
+    harness.withCommandBudget.mockRejectedValueOnce(
+      new BluetoothTimeoutError('budget expired before invoking the callback'),
+    );
+    harness.emit(connectionEvent('expired', 'discovery'));
+    harness.emit(connectionEvent('third', 'discovery'));
+    await flushOperations();
+    expect(harness.respondToGattOperation).toHaveBeenCalledOnce();
+    expect(peripheral.operations()).toMatchObject([
+      { sequence: 2, responseDelivery: 'failed' },
+    ]);
+
+    first.resolve(undefined);
+    await flushOperations();
+    expect(
+      harness.respondToGattOperation.mock.calls.map(
+        ([response]) => response.operationId,
+      ),
+    ).toEqual(['first', 'third']);
+    expect(peripheral.operations().map(({ sequence }) => sequence)).toEqual([
+      2, 1, 3,
+    ]);
+    await bluetooth.dispose();
   });
 });
 

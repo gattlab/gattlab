@@ -92,6 +92,14 @@ export async function exerciseTerminalIntegration(): Promise<void> {
       record.reason;
     void reason;
   });
+  const stopObserving = backend.onGattOperationInterrupted(
+    'operation:1',
+    (error) => {
+      const code: 'BLUETOOTH_TIMEOUT' | 'BLUETOOTH_CANCELLED' = error.code;
+      void code;
+    },
+  );
+  stopObserving();
   backend.assertUsable('addPeripheral');
   await backend.checkLiveness('waitForDevicePrompt');
   await backend.withCommandBudget('setCentralState', 'cdp', (options) =>

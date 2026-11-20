@@ -78,7 +78,7 @@ leftover server before removing the temporary project.
 
 The probe runs, with one worker:
 
-1. the eleven scenarios in `tests/vanilla-app.spec.ts` three times in a row
+1. the twelve scenarios in `tests/vanilla-app.spec.ts` three times in a row
    (`--repeat-each=3`);
 2. the six regression tests R1–R6 in `tests/vanilla-regression.spec.ts` once;
 3. `tests/artifact-failure.spec.ts`, which fails an assertion on purpose. The
@@ -115,6 +115,16 @@ peripheral definition includes `advertisement`; advertising before opening the
 new chooser is insufficient on the pinned Chromium. GattLab restores the
 invalidated hierarchy internally while handles and response queues survive.
 See [reconnect lifecycle](../../docs/protocol-limitations.md#scripted-disconnection-and-reconnection).
+
+## Hold a reconnect
+
+Scenario 12 uses the same chooser and advertisement sequence after a
+disconnect. Call `peripheral.connection.holdNext()` before opening the second
+chooser, then await `held.waitForRequest()` after selecting the peripheral.
+The app stays in `connecting` and still shows the previous value, `87%`. The
+test checks that discovery has not led to a second read. After
+`await held.resume()`, the app reaches `ready` and displays `42%`.
+See [hold a connection response](../../docs/api.md#hold-a-connection-response).
 
 ## Notification boundary
 

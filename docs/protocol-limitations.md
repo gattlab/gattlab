@@ -155,6 +155,17 @@ persistent registration, so advertising before the chooser opens does not
 work. The Vanilla and React sample tests run this reconnection on the pinned
 browser.
 
+On Chromium 159, disconnecting a peripheral while its connection attempt
+is pending can reject `gatt.connect()` with `NetworkError`. An attempt that
+never connected does not produce a second `gattserverdisconnected` event.
+An overlapping `connect()` to the same peripheral can generate a duplicate
+CDP request. The backend accepts one pending connection per peripheral and
+CDP addresses connection responses by peripheral and operation type.
+In the [Chromium contract test](../packages/cdp/test/backend.chromium.test.ts),
+one response results in one successful call and one `NetworkError`.
+For deterministic retries, let the previous attempt settle or explicitly
+disconnect and wait for its outcome before starting another.
+
 ## Simulation fidelity
 
 GattLab exercises the Web Bluetooth behavior of Chromium's virtual adapter. It
