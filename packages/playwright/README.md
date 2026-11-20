@@ -88,7 +88,10 @@ advanced escape hatch, and `cancel()`; it never selects by display name.
 
 Peripheral handles use both service and characteristic UUIDs for lookup.
 Their `connection` and `discovery` queues override the default successful
-response once per queued entry. Characteristic handles expose `reads`,
+response once per queued entry. Use `connection.holdNext()` to observe the
+application's waiting state and call `resume()` when the test is ready to
+deliver success. See [hold a connection response](https://github.com/gattlab/gattlab/blob/main/docs/api.md#hold-a-connection-response).
+Characteristic handles expose `reads`,
 `writes`, `subscriptions`, and `unsubscriptions`; descriptor handles expose
 `reads` and `writes`. Reads default to the definition's copied `initialValue`
 (or empty bytes), and the other attribute operations default to success.

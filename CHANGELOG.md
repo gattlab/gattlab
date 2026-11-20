@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Playwright tests can [hold one GATT connection response](docs/api.md#hold-a-connection-response)
+  while asserting the application's pending state, then resume the connection
+  explicitly. The [Vanilla TypeScript sample](examples/vanilla-ts/README.md#hold-a-reconnect)
+  demonstrates this with a reconnect.
+- CDP consumers can subscribe to timeout and cancellation of a known GATT
+  operation with `onGattOperationInterrupted()`.
+- GATT responses stay in order when a queued response's command budget expires
+  before its callback starts.
+
 ## 0.1.0-beta.1 — 2026-11-16
 
 - Packages declare `engines.node >=22` and npm `keywords`. Node.js 26.11.1 is

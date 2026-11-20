@@ -81,6 +81,11 @@ export interface CdpBluetoothBackendFactoryOptions {
 
 export interface CdpBluetoothBackend extends BluetoothAutomationBackend {
   readonly timeline: BluetoothTimeline;
+  /** Observe the timeout or cancellation of one known GATT operation. */
+  onGattOperationInterrupted(
+    operationId: string,
+    listener: (error: BluetoothTimeoutError | BluetoothCancelledError) => void,
+  ): () => void;
   /** Reject active use after the first terminal transition; identity inspection and stop remain available. */
   assertUsable(operation: string, operationLayer?: CdpOperationLayer): void;
   /** Observe the immutable first terminal record synchronously; unsubscribe is idempotent. */
@@ -608,6 +613,16 @@ class StartedCdpBluetoothBackend implements CdpBluetoothBackend {
         { address },
         address,
       ),
+    );
+  }
+
+  onGattOperationInterrupted(
+    operationId: string,
+    listener: (error: BluetoothTimeoutError | BluetoothCancelledError) => void,
+  ): () => void {
+    return this.#pendingOperations.onGattOperationInterrupted(
+      operationId,
+      listener,
     );
   }
 

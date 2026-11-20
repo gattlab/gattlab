@@ -111,6 +111,10 @@ operations with success. An empty public queue does not mean missing handling.
 | `PeripheralHandle.disconnect`                 | No arguments → `Promise<void>`                                        | Scripts native disconnection and rebuilds invalidated hierarchy before resolving. One C covers disconnect and hierarchy rehydration. Keeps domain handles and queued behavior on success; unknown partial effects at expiry invalidate the lab. No implicit reconnect. |
 | `GattResponseQueue.queueSuccess`              | No arguments → `void`                                                 | Queue one connection/discovery success; synchronous stopped validation. No wait or deadline.                                                                                                                                                                           |
 | `GattResponseQueue.queueError`                | `HciErrorName` → `void`                                               | Queue one HCI failure; invalid name throws validation error. Negative discovery cannot settle natively; see limitations.                                                                                                                                               |
+| `ConnectionResponseQueue.holdNext`            | No arguments → `HeldConnection`                                       | Queue one held connection success in FIFO order. Throws synchronously after disposal. No wait or command budget.                                                                                                                                                       |
+| `HeldConnection.waitForRequest`               | No arguments → `Promise<void>`                                        | Wait up to `operationTimeoutMs` A for assignment. Timeout rejects and leaves the hold queued. No CDP command.                                                                                                                                                          |
+| `HeldConnection.resume`                       | No arguments → `Promise<void>`                                        | Queue delivery under command budget C. Rejects with a validation error before assignment or the original interruption error after cancellation or timeout. Delivery does not restart A.                                                                                |
+| `HeldConnection.cancel`                       | No arguments → `boolean`                                              | Return `true` and cancel waiters if the unassigned hold was removed. Return `false` after assignment or earlier removal. No wait or command budget.                                                                                                                    |
 | `ReadResponseQueue.queue`                     | `ByteSource` → `void`                                                 | Copy next read bytes; invalid payload throws validation error. No response is sent until a matching request.                                                                                                                                                           |
 | `ReadResponseQueue.queueError`                | `AttErrorName` → `void`                                               | Queue one read failure; invalid name throws validation error.                                                                                                                                                                                                          |
 | `AttributeResponseQueue.queueSuccess`         | No arguments → `void`                                                 | Queue one write/subscription/unsubscription success.                                                                                                                                                                                                                   |
@@ -123,7 +127,7 @@ operations with success. An empty public queue does not mean missing handling.
 | `CharacteristicHandle.waitForWrite`           | No arguments → `Promise<CharacteristicWrite>`                         | Arm before action; retain events during entry C, then wait full A. Successful delivery resolves copied bytes and `writeType`; expiry permits one diagnostic C. Earlier writes are not replayed.                                                                        |
 | `DescriptorHandle.waitForWrite`               | No arguments → `Promise<DescriptorWrite>`                             | Same next-write/deadline semantics, without characteristic write intent.                                                                                                                                                                                               |
 
-Queue, lookup, advertising, disconnect, expectation and write-wait methods throw after disposal
+Queue, held connection, lookup, advertising, disconnect, expectation and write-wait methods throw after disposal
 synchronously with `BLUETOOTH_BACKEND_STOPPED`, even when their return type is
 a promise. Registration rejects; journal snapshots and readonly
 identity properties remain readable after disposal. Pending
@@ -167,6 +171,45 @@ The [quick-start test](quick-start.md) covers the chooser and read journey; the
 [Vanilla sample](../examples/vanilla-ts/README.md) adds writes through the UI.
 The [Playwright package guide](../packages/playwright/README.md)
 also shows reconnect ordering and configuration.
+
+### Hold a connection response
+
+`peripheral.connection.holdNext()` reserves one FIFO response for the next
+matching `gatt.connect()`. The application still starts the connection.
+Use the returned `HeldConnection` to observe the request and release a
+successful response.
+
+```ts
+const held = peripheral.connection.holdNext();
+const prompt = bluetooth.waitForDevicePrompt();
+await page.getByRole('button', { name: 'Reconnect' }).click();
+const chooser = await prompt;
+await peripheral.advertise();
+await chooser.select(peripheral);
+
+await held.waitForRequest();
+await expect(page.getByTestId('status')).toHaveText('connecting');
+await held.resume();
+await expect(page.getByTestId('status')).toHaveText('ready');
+```
+
+- `waitForRequest()` observes the request within `operationTimeoutMs`.
+  A timeout leaves the queued hold in place.
+- `cancel()` removes a queued hold and returns `true`. It returns `false`
+  once a request has claimed the hold or it has already been cancelled.
+- `resume()` requires the matching request and resolves when the backend
+  delivers the selected response. Concurrent calls share that delivery. After
+  timeout or cancellation it rejects with the original GattLab error.
+  The application assertion verifies the native result.
+- The pending operation uses the fixture's `operationTimeoutMs` from request
+  registration (default 5,000 ms). Set it higher for a test with a longer
+  application timeout. A GattLab timeout alone sends no HCI failure.
+- A hold that ends after assignment contributes one journal record. The
+  `response` field records the selected outcome. `responseDelivery: 'failed'`
+  also covers a hold cancelled or timed out before any response was sent.
+
+Use serial attempts for deterministic retry tests. See the [Chromium
+reconnection limitations](protocol-limitations.md#scripted-disconnection-and-reconnection).
 
 ## Normalize bytes and models
 
@@ -297,7 +340,8 @@ the Playwright facade exposes no command-budget option and keeps C = 30,000 ms.
 `createPeripheral`, `createPreconnectedPeripheral`, `setState`,
 `waitForDevicePrompt`, `advertise`, `disconnect`, `characteristic`, `descriptor`,
 `expectRead`, `expectSubscription`, `expectUnsubscription`, `waitForWrite`,
-`queue`, `queueSuccess`, `queueError`, `select`, `selectById`, `cancel`;
+`queue`, `queueSuccess`, `queueError`, `holdNext`, `waitForRequest`, `resume`,
+`select`, `selectById`, `cancel`;
 direct backend names additionally include `setCentralState`, `addPeripheral`,
 `simulateAdvertisement`, `onEvent`, and `respondToGattOperation`, `respondToCharacteristicOperation`,
 `respondToDescriptorOperation`.
@@ -453,6 +497,14 @@ cancellation.cancel();
 ```
 
 ## Advanced CDP integration
+
+`CdpBluetoothBackend.onGattOperationInterrupted(operationId, listener)`
+observes timeout or cancellation for a known GATT operation. It calls the
+listener asynchronously with the original `BluetoothTimeoutError` or
+`BluetoothCancelledError`. If the interruption is still retained, subscribing
+after it occurred delivers the same error. Success and ordinary delivery
+failure do not invoke the listener. Call the returned idempotent function
+to unsubscribe. The observer sends no browser commands.
 
 Source declarations: [factory/backend](../packages/cdp/src/backend.ts),
 [transport](../packages/cdp/src/transport.ts),

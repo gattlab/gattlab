@@ -44,6 +44,7 @@ const applicationHtml = `<!doctype html>
       window.contractState = {
         selection: { outcome: 'idle' },
         connection: { outcome: 'idle' },
+        connectionAttempts: [],
       };
       let selectedDevice;
       document.querySelector('#choose').onclick = async () => {
@@ -61,15 +62,15 @@ const applicationHtml = `<!doctype html>
         }
       };
       document.querySelector('#connect').onclick = async () => {
-        window.contractState.connection = { outcome: 'pending' };
+        const attempt = { outcome: 'pending' };
+        window.contractState.connection = attempt;
+        window.contractState.connectionAttempts.push(attempt);
         try {
           await selectedDevice.gatt.connect();
-          window.contractState.connection = { outcome: 'connected' };
+          attempt.outcome = 'connected';
         } catch (error) {
-          window.contractState.connection = {
-            outcome: 'rejected',
-            errorName: error.name,
-          };
+          attempt.outcome = 'rejected';
+          attempt.errorName = error.name;
         }
       };
     </script>
@@ -343,6 +344,116 @@ async function readSelection(page: Page): Promise<ApplicationSelection> {
       ).contractState.selection,
   );
 }
+
+describe('CdpBluetoothBackend real Chromium connection contract', () => {
+  it('rejects an overlapping connection request without consuming the first operation', async () => {
+    const definition = validatePeripheralDefinition({
+      address,
+      name: 'GattLab connection sensor',
+      services: [{ uuid: serviceUuid, characteristics: [] }],
+    });
+    if (!definition.success) throw new Error('Expected a valid fixture.');
+
+    const application = await startApplicationServer();
+    let browser: Browser | undefined;
+    let backend: CdpBluetoothBackend | undefined;
+    try {
+      browser = await chromium.launch({
+        headless: true,
+        ...(process.platform === 'linux'
+          ? { args: ['--enable-features=WebBluetooth'] }
+          : {}),
+      });
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      await page.goto(application.url);
+      const activeBackend = await createBackend({
+        browser,
+        context,
+        page,
+        flushedSnapshots: [],
+        releaseOrder: [],
+        audit: new ResourceAudit(),
+      });
+      backend = activeBackend;
+      await activeBackend.addPeripheral(definition.value);
+
+      const prompted = activeBackend.waitForDevicePrompt();
+      await page
+        .getByRole('button', { name: 'Choose teardown sensor' })
+        .click();
+      const prompt = await prompted;
+      await expect
+        .poll(() => prompt.devices)
+        .toEqual([{ id: address, name: '' }]);
+      await prompt.select(address);
+      await expect
+        .poll(() => readSelection(page))
+        .toEqual({ outcome: 'selected' });
+
+      const connect = page.getByRole('button', {
+        name: 'Connect teardown sensor',
+      });
+      const requested = waitForGattOperation(activeBackend);
+      await connect.click();
+      const first = await requested;
+      await connect.click();
+      await expect
+        .poll(() =>
+          activeBackend.timeline
+            .snapshot()
+            .find(({ type }) => type === 'operation-concurrency-rejected'),
+        )
+        .toMatchObject({
+          data: {
+            pendingOperationId: first.operationId,
+            operationType: 'connection',
+          },
+        });
+
+      const readAttempts = () =>
+        page.evaluate(
+          () =>
+            (
+              globalThis as unknown as {
+                contractState: {
+                  connectionAttempts: readonly {
+                    outcome: string;
+                    errorName?: string;
+                  }[];
+                };
+              }
+            ).contractState.connectionAttempts,
+        );
+      expect(await readAttempts()).toEqual([
+        { outcome: 'pending' },
+        { outcome: 'pending' },
+      ]);
+      await activeBackend.respondToGattOperation({
+        operationId: first.operationId,
+        type: 'connection',
+        result: 'success',
+      });
+      await expect
+        .poll(async () =>
+          (await readAttempts())
+            .map(({ outcome, errorName }) => errorName ?? outcome)
+            .sort(),
+        )
+        .toEqual(['NetworkError', 'connected']);
+    } finally {
+      try {
+        await backend?.stop();
+      } finally {
+        try {
+          await browser?.close();
+        } finally {
+          await closeApplicationServer(application.server);
+        }
+      }
+    }
+  });
+});
 
 describe('CdpBluetoothBackend real Chromium teardown contract', () => {
   it('disables before an in-flight detach, releases after artifacts, and gives the next lease an empty registry', async () => {

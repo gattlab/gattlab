@@ -309,6 +309,35 @@ export class PendingOperationRegistry {
     return this.#cancelMatching(() => true, reason);
   }
 
+  onGattOperationInterrupted(
+    operationId: string,
+    listener: (error: BluetoothTimeoutError | BluetoothCancelledError) => void,
+  ): () => void {
+    const pending = this.#pendingById.get(operationId);
+    const terminal = this.#terminalById.get(operationId);
+    if ((pending ?? terminal)?.family !== 'gatt') {
+      throw new BluetoothValidationError(
+        'Expected a known GATT operation id.',
+        {
+          context: { operationId, reason: 'unknown-gatt-operation-id' },
+        },
+      );
+    }
+    let observer: typeof listener | undefined = listener;
+    const interruption =
+      pending?.interruption ?? Promise.resolve({ error: terminal?.error });
+    void interruption
+      .then(({ error }) => {
+        const notify = observer;
+        observer = undefined;
+        if (error !== undefined) notify?.(error);
+      })
+      .catch(() => undefined);
+    return () => {
+      observer = undefined;
+    };
+  }
+
   /** Waits until every currently in-flight protocol mutation has settled. */
   async settled(): Promise<void> {
     const mutations = [...this.#inFlightMutations];

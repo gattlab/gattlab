@@ -368,4 +368,45 @@ test.describe.serial('Vanilla JavaScript application', () => {
         ),
     ).toEqual([]);
   });
+
+  test('12: shows the connecting state while a reconnect is held', async ({
+    bluetooth,
+    page,
+  }) => {
+    await page.goto(application.url);
+    const { peripheral, io } = await createProbePeripheral(bluetooth);
+    io.reads.queue(bytes([87]));
+    io.reads.queue(bytes([42]));
+    const connect = page.getByRole('button', {
+      name: 'Connect, read, and write',
+    });
+    const status = page.getByTestId('status');
+    const battery = page.getByTestId('battery');
+
+    const firstPrompt = bluetooth.waitForDevicePrompt();
+    await connect.click();
+    await (await firstPrompt).select(peripheral);
+    await expect(status).toHaveText('ready');
+    await expect(battery).toHaveText('87%');
+    await io.expectRead();
+    await peripheral.disconnect();
+    await expect(status).toHaveText('disconnected');
+
+    const held = peripheral.connection.holdNext();
+    const secondPrompt = bluetooth.waitForDevicePrompt();
+    await connect.click();
+    const prompt = await secondPrompt;
+    await peripheral.advertise();
+    await prompt.select(peripheral);
+    await held.waitForRequest();
+    await expect(status).toHaveText('connecting');
+    await expect(battery).toHaveText('87%');
+    expect(
+      io.operations().filter(({ request }) => request.type === 'read'),
+    ).toHaveLength(1);
+
+    await held.resume();
+    await expect(status).toHaveText('ready');
+    await expect(battery).toHaveText('42%');
+  });
 });

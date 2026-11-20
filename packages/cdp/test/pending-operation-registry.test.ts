@@ -146,6 +146,33 @@ function characteristicInput(
       };
 }
 
+describe('GATT operation interruption observations', () => {
+  it('reports the retained terminal error and respects unsubscription', async () => {
+    const { registry, time } = createRegistry({ terminalLimit: 1 });
+    const { operationId } = registry.register(gattInput('connection'));
+    const listener = vi.fn();
+    const removed = vi.fn();
+    registry.onGattOperationInterrupted(operationId, listener);
+    const unsubscribe = registry.onGattOperationInterrupted(
+      operationId,
+      removed,
+    );
+    unsubscribe();
+    unsubscribe();
+    time.advanceBy(100);
+    registry.onGattOperationInterrupted(operationId, listener);
+    registry.cancel(
+      registry.register(gattInput('connection')).operationId,
+      'other',
+    );
+    await Promise.resolve();
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(listener.mock.calls[0]?.[0]).toBe(listener.mock.calls[1]?.[0]);
+    expect(listener.mock.calls[0]?.[0]).toBeInstanceOf(BluetoothTimeoutError);
+    expect(removed).not.toHaveBeenCalled();
+  });
+});
+
 function descriptorInput(
   type: 'read' | 'write',
   data: Uint8Array = new Uint8Array([3, 4]),
